@@ -23,7 +23,8 @@ robotCamIP = "http://10.25.76.11/mjpg/video.mjpg"
 useLocalRobot = True
 robotIP = '10.25.76.2'
 localIP = '127.0.0.1'
-allianceIsRed = True
+allianceIsRed = False
+isConnected = False
 
 #Thresholding HSV Values
 redMin = np.array([160, 50, 50], np.uint8)
@@ -67,6 +68,7 @@ CV_CAP_PROP_FRAME_HEIGHT = 4
 cv2.namedWindow("Vision DS", 1)
 
 #Blank image
+blank = np.zeros((400, 400, 3), np.uint8)
 stitched = np.zeros((645, 645, 3), np.uint8)
 if allianceIsRed:
     stitched[240:245,:] = (0, 0, 255)
@@ -83,17 +85,34 @@ NetworkTable.SetClientMode()
 NetworkTable.Initialize()
 
 #Table Object
-table = NetworkTable.GetTable("datatable")
+if useLocalRobot:
+    table = NetworkTable.GetTable("datatable")
+else:
+    table = NetworkTable.GetTable("vision")
 
-#String to int
-def stringToInt(s):
-    try:
-        return int(s)
-    except exceptions.ValueError:
-        return float(s)
+#Initial Robot Connection
+##while not isConnected:
+##    cv2.imshow("Vision DS", blank)
+##    try:
+##        isConnected = table.GetBoolean("connection")
+##    except TableKeyNotDefinedException:
+##        isConnected = False
 
-#Callback Function
-#def callBack(event, x, y, flags, userdata)
+###String to int
+##def stringToInt(s):
+##    try:
+##        return int(s)
+##    except exceptions.ValueError:
+##        return float(s)
+
+###Callback Function
+##def callBack(event, x, y, flags, param):
+##    if event == cv2.cv.EVENT_LBUTTONDOWN:
+##        print(img[x, y])
+##        if debug:
+##            print("Click")
+
+##cv2.setMouseCallback("stitched", callBack)
 
 #Choose source for cam
 if useInternal:
@@ -107,7 +126,10 @@ else:
 while camClosed:
     if cam.isOpened():
         ret, img = cam.read()
-        camClosed = False
+        if ret:
+            camClosed = False
+        else:
+            camClosed = True
     else:
         camClosed = True
 
