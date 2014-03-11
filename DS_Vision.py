@@ -23,6 +23,7 @@ robotCamIP = "http://10.25.76.11/mjpg/video.mjpg"
 useLocalRobot = True
 robotIP = '10.25.76.2'
 localIP = '127.0.0.1'
+allianceIsRed = True
 
 #Thresholding HSV Values
 redMin = np.array([160, 50, 50], np.uint8)
@@ -67,7 +68,10 @@ cv2.namedWindow("Vision DS", 1)
 
 #Blank image
 stitched = np.zeros((645, 645, 3), np.uint8)
-stitched[240:245,:] = (0, 0, 255)
+if allianceIsRed:
+    stitched[240:245,:] = (0, 0, 255)
+else:
+    stitched[240:245,:] = (255, 0, 0)
 stitched[245:645,:] = (145, 145, 145)
 
 #NetworkTables Client Init
@@ -88,6 +92,9 @@ def stringToInt(s):
     except exceptions.ValueError:
         return float(s)
 
+#Callback Function
+#def callBack(event, x, y, flags, userdata)
+
 #Choose source for cam
 if useInternal:
     cam = cv2.VideoCapture(internalCam)
@@ -106,19 +113,34 @@ while camClosed:
 
 #Main Loop
 while ret:
-    #Ball Detection
-    #Convert & Threshold
-    redHSVImage = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    redDetectImage = cv2.inRange(redHSVImage, redMin, redMax)
-    #Morphology
-    redOpenMorphImage = cv2.morphologyEx(redDetectImage, cv2.MORPH_OPEN, se)
-    redCloseMorphImage = cv2.morphologyEx(redOpenMorphImage, cv2.MORPH_CLOSE, se)
-    #Gaussian Blur
-    redBlurredImage = cv2.GaussianBlur(redCloseMorphImage, (0, 0), gaussian_power)
-    #Detect Circles
-    circles = cv2.HoughCircles(redBlurredImage, cv2.cv.CV_HOUGH_GRADIENT, dpForCircles,
-                               minDist, param1=param1ForCircles, param2=param2ForCircles,
-                               minRadius=radMin, maxRadius=radMax)
+    if allianceIsRed:        
+        #Ball Detection for Red
+        #Convert & Threshold
+        redHSVImage = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        redDetectImage = cv2.inRange(redHSVImage, redMin, redMax)
+        #Morphology
+        redOpenMorphImage = cv2.morphologyEx(redDetectImage, cv2.MORPH_OPEN, se)
+        redCloseMorphImage = cv2.morphologyEx(redOpenMorphImage, cv2.MORPH_CLOSE, se)
+        #Gaussian Blur
+        redBlurredImage = cv2.GaussianBlur(redCloseMorphImage, (0, 0), gaussian_power)
+        #Detect Circles
+        circles = cv2.HoughCircles(redBlurredImage, cv2.cv.CV_HOUGH_GRADIENT, dpForCircles,
+                                   minDist, param1=param1ForCircles, param2=param2ForCircles,
+                                   minRadius=radMin, maxRadius=radMax)
+    else:
+        #Ball Detection for Blue
+        #Convert & Threshold
+        blueHSVImage = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        blueDetectImage = cv2.inRange(blueHSVImage, blueMin, blueMax)
+        #Morphology
+        blueOpenMorphImage = cv2.morphologyEx(blueDetectImage, cv2.MORPH_OPEN, se)
+        blueCloseMorphImage = cv2.morphologyEx(blueOpenMorphImage, cv2.MORPH_CLOSE, se)
+        #Gaussian Blur
+        blueBlurredImage = cv2.GaussianBlur(blueCloseMorphImage, (0, 0), gaussian_power)
+        #Detect Circles
+        circles = cv2.HoughCircles(blueBlurredImage, cv2.cv.CV_HOUGH_GRADIENT, dpForCircles,
+                                   minDist, param1=param1ForCircles, param2=param2ForCircles,
+                                   minRadius=radMin, maxRadius=radMax)
     if circles != None:
         for i in circles[0,:]:
             centerPoint = (i[0], i[1])
@@ -135,7 +157,7 @@ while ret:
     numberOfFrames += 1
     cv2.putText(img, "FPS: %d" % fps, fpsTextPos, cv2.FONT_HERSHEY_SIMPLEX, 0.65, fpsTextColor, 2)
 
-    #Send FPS via NetworkTables
+    #Send data via NetworkTables
     table.PutNumber("FPS", fps)
     if centerPoint != 0:
         table.PutNumber("X", int(centerPoint[0]))
@@ -153,8 +175,13 @@ while ret:
         print(" ")
 
     #Stitch Images
-    stitched[:240, 0:320] = cv2.cvtColor(redBlurredImage, cv2.COLOR_GRAY2RGB)
-    stitched[:240, 320:325] = (0, 0, 255)
+    #Paints borders according to alliance color
+    if allianceIsRed:
+        stitched[:240, 0:320] = cv2.cvtColor(redBlurredImage, cv2.COLOR_GRAY2RGB)
+        stitched[:240, 320:325] = (0, 0, 255)
+    else:
+        stitched[:240, 0:320] = cv2.cvtColor(blueBlurredImage, cv2.COLOR_GRAY2RGB)
+        stitched[:240, 320:325] = (255, 0, 0)
     stitched[:240, 325:] = img
 
     #Display Image
