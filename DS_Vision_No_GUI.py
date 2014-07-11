@@ -15,7 +15,6 @@ debug = False
 
 #Source variables
 ret = False
-useInternal = True
 camClosed = True
 internalCam = 0
 robotCamIP = 'http://10.25.76.11/mjpg/video.mjpg'
@@ -26,7 +25,7 @@ useLocalRobot = True
 robotIP = '10.25.76.2'
 localIP = '127.0.0.1'
 allianceIsRed = True
-#isConnected = False
+isConnected = False
 
 #Thresholding HSV Values
 redMin = np.array([160, 50, 50], np.uint8)
@@ -70,13 +69,13 @@ CV_CAP_PROP_FRAME_WIDTH = 3
 CV_CAP_PROP_FRAME_HEIGHT = 4
 
 #Window
-cv2.namedWindow("Vision DS", 1)
+#cv2.namedWindow("Vision DS", 1)
 
 #Extra Images
-errorScreen = cv2.imread("system_down.jpg")
-blank = np.zeros((400, 400, 3), np.uint8)
-canvas = np.zeros((645, 645, 3), np.uint8)
-canvas[245:645, :] = (145, 145, 145)
+#errorScreen = cv2.imread("system_down.jpg")
+#blank = np.zeros((400, 400, 3), np.uint8)
+#canvas = np.zeros((645, 645, 3), np.uint8)
+#canvas[245:645, :] = (145, 145, 145)
 
 #NetworkTables Client Init
 if useLocalRobot:
@@ -106,14 +105,14 @@ def connect():
     global isConnected
     isConnected = False
     while not isConnected:
-        cv2.imshow("Vision DS", errorScreen)
+        #cv2.imshow("Vision DS", errorScreen)
         try:
             isConnected = table.GetBoolean("connection")
         except TableKeyNotDefinedException:
             isConnected = False
         checkAlliance()
         if cv2.waitKey(frameInterval) == 27:
-            cv2.destroyAllWindows()
+            #cv2.destroyAllWindows()
             exit(0)
 
 #Callback Function
@@ -126,35 +125,21 @@ def connect():
 #cv2.setMouseCallback("canvas", callBack)
 
 #Choose source for cam
-if useInternal:
-    cam = cv2.VideoCapture(internalCam)
-    cam.set(CV_CAP_PROP_FRAME_WIDTH, 320)
-    cam.set(CV_CAP_PROP_FRAME_HEIGHT, 240)
-else:
-    cam = cv2.VideoCapture(robotCamIP)
+
+cam = cv2.VideoCapture(internalCam)
+cam.set(CV_CAP_PROP_FRAME_WIDTH, 320)
+cam.set(CV_CAP_PROP_FRAME_HEIGHT, 240)
+
 
 #Verify cam
 while camClosed:
     if cam.isOpened():
     #Read Cam
-        if useLocalRobot:
-            ret, img = cam.read()
-        else:
-            bytes+=stream.read(16384)
-            a = bytes.find('\xff\xd8')
-            b = bytes.find('\xff\xd9')
-            if a!=-1 and b!=-1:
-                jpg = bytes[a:b+2]
-                bytes= bytes[b+2:]
-                canvas = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.CV_LOAD_IMAGE_COLOR)
-                if canvas != Null:
-                    ret = true
+        ret, img = cam.read()
         if ret:
             camClosed = False
         else:
             camClosed = True
-    else:
-        camClosed = True
 
 #Call connect function
 connect()
@@ -208,7 +193,7 @@ while ret:
         fps = int(round(1 / (totalTime / (numberOfFrames - startAtFrame))))
     time1 = time2
     numberOfFrames += 1
-    cv2.putText(img, "FPS: %d" % fps, fpsTextPos, cv2.FONT_HERSHEY_SIMPLEX, 0.65, fpsTextColor, 2)
+    #cv2.putText(img, "FPS: %d" % fps, fpsTextPos, cv2.FONT_HERSHEY_SIMPLEX, 0.65, fpsTextColor, 2)
 
     #Send data via NetworkTables
     table.PutNumber("FPS", fps)
@@ -217,12 +202,12 @@ while ret:
         prev_y = centerPoint[1]
         table.PutNumber("X", int(centerPoint[0]))
         table.PutNumber("Y", int(centerPoint[1]))
-        canvas[245:645, :] = (145, 145, 145)
-        cv2.putText(canvas, "X Point: %d" % centerPoint[0], (5, 360), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(canvas, "Y Point: %d" % centerPoint[1], (5, 420), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
+        #canvas[245:645, :] = (145, 145, 145)
+        #cv2.putText(canvas, "X Point: %d" % centerPoint[0], (5, 360), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
+        #cv2.putText(canvas, "Y Point: %d" % centerPoint[1], (5, 420), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
     if radius != 0:
         table.PutNumber("R", int(radius))
-        cv2.putText(canvas, "Radius: %d" % radius, (5, 480), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
+        #cv2.putText(canvas, "Radius: %d" % radius, (5, 480), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
 
     #FPS Debug Messages
     if debug:
@@ -236,6 +221,7 @@ while ret:
     #Stitch Images
     #Paints borders according to alliance color
     #Show Alliance
+    """
     if allianceIsRed:
         canvas[:240, 0:320] = cv2.cvtColor(redBlurredImage, cv2.COLOR_GRAY2RGB)
         canvas[:240, 320:325] = (0, 0, 255)
@@ -253,21 +239,14 @@ while ret:
         cv2.putText(canvas, "Blue", (410, 301), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255), 2)
 
     canvas[:240, 325:] = img
+    """
 
     #Display Image
-    cv2.imshow("Vision DS", canvas)
+    #cv2.imshow("Vision DS", canvas)
 
     #Read Cam
-    if useLocalRobot:
-        ret, img = cam.read()
-    else:
-        bytes+=stream.read(16384)
-        a = bytes.find('\xff\xd8')
-        b = bytes.find('\xff\xd9')
-        if a!=-1 and b!=-1:
-            jpg = bytes[a:b+2]
-            bytes= bytes[b+2:]
-            canvas = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.CV_LOAD_IMAGE_COLOR)
+    ret, img = cam.read()
+
             
     #Verify connection
     try:
@@ -282,14 +261,14 @@ while ret:
     #checkAlliance()
 
     #Delay and exit program
-    key = cv2.waitKey(frameInterval)
-    if key == 27:
-        break
+    cv2.waitKey(frameInterval)
+    #if key == 27:
+        #break
 
 #Cleanly exit program
 try:
     table.PutBoolean("connection", False)
 except TableKeyNotDefinedException:
     pass
-cv2.destroyAllWindows()
+#cv2.destroyAllWindows()
 exit(0)
