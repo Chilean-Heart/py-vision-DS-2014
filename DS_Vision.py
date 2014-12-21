@@ -17,7 +17,7 @@ debug = False
 ret = False
 useInternal = True
 camClosed = True
-internalCam = 0
+internalCam = 1
 robotCamIP = 'http://10.25.76.11/mjpg/video.mjpg'
 bytes=''
 
@@ -140,15 +140,15 @@ while camClosed:
         if useLocalRobot:
             ret, img = cam.read()
         else:
-            bytes+=stream.read(16384)
+            bytes += cam.read(16384)
             a = bytes.find('\xff\xd8')
             b = bytes.find('\xff\xd9')
-            if a!=-1 and b!=-1:
-                jpg = bytes[a:b+2]
-                bytes= bytes[b+2:]
+            if a != -1 and b != -1:
+                jpg = bytes[a : b+2]
+                bytes= bytes[b+2 :]
                 canvas = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.CV_LOAD_IMAGE_COLOR)
-                if canvas != Null:
-                    ret = true
+                if canvas != None:
+                    ret = True
         if ret:
             camClosed = False
         else:
