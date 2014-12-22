@@ -5,7 +5,7 @@
 
 #Imports
 import cv2
-import urllib
+#import urllib
 import numpy as np
 from time import time
 from pynetworktables import *
@@ -19,36 +19,36 @@ useInternal = True
 camClosed = True
 internalCam = 1
 robotCamIP = 'http://10.25.76.11/mjpg/video.mjpg'
-bytes=''
+bytes_ = []
 
-#Robot Variables
+# Robot Variables
 useLocalRobot = True
 robotIP = '10.25.76.2'
 localIP = '127.0.0.1'
 allianceIsRed = True
-#isConnected = False
+isConnected = False
 
-#Thresholding HSV Values
+# Threshold HSV Values
 redMin = np.array([160, 50, 50], np.uint8)
 redMax = np.array([180, 200, 200], np.uint8)
 blueMin = np.array([70, 50, 50], np.uint8)
 blueMax = np.array([135, 200, 200], np.uint8)
 
-#Function Parameters
-seSize = (2, 2)        #Element for morphology
-se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, seSize)  #Create structuring element before loop
-minDist = 100          #Minimum distance between circle center points
-radMin = 50            #Minimum detected circle radius
-radMax = 250           #Maximum detected circle radius
-frameInterval = 33     #Time in ms in between frames
-gaussian_power = 5     #Gaussian blur parameter
-param1ForCircles = 50  #First Parameter for HoughCircles -
-param2ForCircles = 25  #Second Parameter for HoughCircles -
-dpForCircles = 2       #DP parameter for HoughCircles -
+# Function Parameters
+seSize = (2, 2)        # Element for morphology
+se = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, seSize)  # Create structuring element before loop
+minDist = 100          # Minimum distance between circle center points
+radMin = 50            # Minimum detected circle radius
+radMax = 250           # Maximum detected circle radius
+frameInterval = 33     # Time in ms in between frames
+gaussian_power = 5     # Gaussian blur parameter
+param1ForCircles = 50  # First Parameter for HoughCircles -
+param2ForCircles = 25  # Second Parameter for HoughCircles -
+dpForCircles = 2       # DP parameter for HoughCircles -
 
 #Circle Parameters
-centerPoint = 0        #Circle center point
-radius = 0             #Circle radius
+centerPoint = 0        # Circle center point
+radius = 0             # Circle radius
 ##largestRadius = 0
 ##largestCircle = (0, 0, 0)
 prev_x = 0
@@ -92,8 +92,9 @@ if useLocalRobot:
 else:
     table = NetworkTable.GetTable("vision")
 
+
 #Check robot color alliance
-def checkAlliance():
+def check_alliance():
     global allianceIsRed
     global isConnected
     try:
@@ -111,7 +112,7 @@ def connect():
             isConnected = table.GetBoolean("connection")
         except TableKeyNotDefinedException:
             isConnected = False
-        checkAlliance()
+        check_alliance()
         if cv2.waitKey(frameInterval) == 27:
             cv2.destroyAllWindows()
             exit(0)
@@ -140,19 +141,16 @@ while camClosed:
         if useLocalRobot:
             ret, img = cam.read()
         else:
-            bytes += cam.read(16384)
-            a = bytes.find('\xff\xd8')
-            b = bytes.find('\xff\xd9')
+            bytes_ += cam.read(16384)
+            a = bytes_.find('\xff\xd8')
+            b = bytes_.find('\xff\xd9')
             if a != -1 and b != -1:
-                jpg = bytes[a : b+2]
-                bytes= bytes[b+2 :]
+                jpg = bytes_[a : b+2]
+                bytes_= bytes_[b+2 :]
                 canvas = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.CV_LOAD_IMAGE_COLOR)
-                if canvas != None:
+                if canvas is not None:
                     ret = True
-        if ret:
-            camClosed = False
-        else:
-            camClosed = True
+        camClosed = not ret
     else:
         camClosed = True
 
@@ -261,12 +259,12 @@ while ret:
     if useLocalRobot:
         ret, img = cam.read()
     else:
-        bytes+=stream.read(16384)
-        a = bytes.find('\xff\xd8')
-        b = bytes.find('\xff\xd9')
-        if a!=-1 and b!=-1:
-            jpg = bytes[a:b+2]
-            bytes= bytes[b+2:]
+        bytes_ += cam.read(16384)
+        a = bytes_.find('\xff\xd8')
+        b = bytes_.find('\xff\xd9')
+        if a != -1 and b != -1:
+            jpg = bytes_[a : b+2]
+            bytes_= bytes_[b+2 : ]
             canvas = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.CV_LOAD_IMAGE_COLOR)
             
     #Verify connection
